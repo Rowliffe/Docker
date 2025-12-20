@@ -1,3 +1,11 @@
+# Secrets (doit rester local)
+secrets/db_password.txt
+
+# Env locaux (ne pas committer)
+.env
+backend/.env
+frontend/.env
+
 node_modules/
 .env
 .env.example

@@ -1,0 +1,27 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      target: prod
+    environment:
+      NODE_ENV: production
+    # accès externe via le frontend nginx (reverse-proxy)
+    ports: !reset []
+
+  frontend:
+    build:
+      context: ./frontend
+      target: prod
+      args:
+        # '.' => fetch('./api/instruction') => même origine (nginx proxy)
+        VITE_API_BASE_URL: .
+    environment: !override {}
+    ports: !override
+      - "80:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/ > /dev/null || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+

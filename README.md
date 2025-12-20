@@ -8,9 +8,7 @@ Ce projet est un squelette minimal pour l'évaluation Docker. Il comprend :
 
 ## Prérequis
 
-- Node.js >= 18
-- npm
-- PostgreSQL (en local ou via Docker pour les tests)
+- Docker Desktop / Docker Engine avec la commande `docker compose`
 
 ## Structure du projet
 
@@ -19,71 +17,48 @@ Ce projet est un squelette minimal pour l'évaluation Docker. Il comprend :
 ├── backend/           # API Express
 ├── db/
 │   └── init.sql       # Script d'initialisation PostgreSQL
+├── compose.yaml       # Mode développement (targets dev)
+├── compose.prod.yaml  # "Production locale" (targets prod)
+├── secrets/
+│   └── db_password.txt.example
 └── README.md
 ```
 
-## Installation et lancement
+## Installation rapide (obligatoire)
 
-### 1. Base de données
+### 1) Créer la configuration (sans secrets en clair)
 
-Créez une base de données PostgreSQL et exécutez le script d'initialisation :
+- Créez le secret local (non commité) :
 
 ```bash
-psql -U postgres -d evaluation -f db/init.sql
+cp secrets/db_password.txt.example secrets/db_password.txt
 ```
 
-### 2. Backend
+- Créez votre fichier `.env` local (non commité) :
 
 ```bash
-cd backend
-
-# Copier le fichier d'environnement
 cp .env.example .env
-
-# Éditer .env avec vos identifiants PostgreSQL
-# DATABASE_URL=postgresql://postgres:password@localhost:5432/evaluation
-
-# Installer les dépendances
-npm install
-
-# Lancer en mode développement
-npm run dev
 ```
 
-Le backend sera accessible sur `http://localhost:3001`.
+> Important : `.env` ne contient **pas** de secret. Le mot de passe DB est lu via `secrets/db_password.txt` (Compose secrets).
 
-### 3. Frontend
+## Lancement en mode développement (dev)
 
 ```bash
-cd frontend
-
-# Installer les dépendances
-npm install
-
-# Lancer en mode développement
-npm run dev
+docker compose -f compose.yaml up --build
 ```
 
-Le frontend sera accessible sur `http://localhost:5173`.
+- Frontend (Vite) : `http://localhost:5173`
+- Backend : `http://localhost:3001`
 
-## Configuration
+## Lancement en mode "production locale" (prod)
 
-### Backend
+```bash
+docker compose -f compose.yaml -f compose.prod.yaml up --build
+```
 
-Variables d'environnement (fichier `backend/.env`) :
-
-| Variable | Description | Exemple |
-|----------|-------------|---------|
-| `DATABASE_URL` | URL de connexion PostgreSQL | `postgresql://postgres:password@localhost:5432/evaluation` |
-| `PORT` | Port du serveur Express | `3001` |
-
-### Frontend
-
-Variables d'environnement (fichier `frontend/.env`) :
-
-| Variable | Description | Exemple |
-|----------|-------------|---------|
-| `VITE_API_BASE_URL` | URL du backend | `http://localhost:3001` |
+- Point d’entrée unique : `http://localhost` (nginx)
+- API : `http://localhost/api/instruction` (proxy nginx -> backend)
 
 ## Endpoint API
 
@@ -117,36 +92,65 @@ Table `instructions` :
 | `message` | TEXT | Message de l'instruction |
 | `created_at` | TIMESTAMPTZ | Date de création |
 
-## Votre mission
+## Tests de fonctionnement (obligatoire)
 
-**Vous devez créer les Dockerfiles et le docker-compose.yaml pour conteneuriser cette application.**
-
-Consultez le guide d'évaluation pour les exigences détaillées.
-
-## Docker
-
-Instructions pour lancer l'application avec Docker Compose :
-
-1. Construire et démarrer les conteneurs :
+- **Santé backend** :
 
 ```bash
-docker compose up --build
+curl http://localhost:3001/health
 ```
 
-2. Accéder aux services depuis l'hôte :
-
-- Frontend : http://localhost:5173
-- Backend : http://localhost:3001
-- PostgreSQL : port 5432 (user: `postgres`, password: `postgres`, db: `evaluation`)
-
-3. Pour stopper et supprimer les conteneurs et volumes :
+- **E2E API (backend -> DB)** :
 
 ```bash
-docker compose down -v
+curl http://localhost:3001/api/instruction
 ```
 
-Remarques :
+- **E2E via point d’entrée unique (prod locale)** :
 
-- Le fichier `docker-compose.yml` à la racine orchestre `db`, `backend` et `frontend`.
-- Si vous voulez modifier les identifiants PostgreSQL, mettez à jour les variables d'environnement dans le service `db` du `docker-compose.yml`.
+```bash
+curl http://localhost/api/instruction
+```
+
+## Test de persistance (obligatoire)
+
+1) Insérer une nouvelle instruction :
+
+```bash
+docker compose -f compose.yaml exec db psql -U postgres -d evaluation -c "INSERT INTO instructions(message) VALUES ('persist test');"
+```
+
+2) Redémarrer uniquement la DB :
+
+```bash
+docker compose -f compose.yaml restart db
+```
+
+3) Vérifier que la donnée est toujours là (preuve de volume) :
+
+```bash
+docker compose -f compose.yaml exec db psql -U postgres -d evaluation -c "SELECT message FROM instructions ORDER BY id DESC LIMIT 1;"
+```
+
+## Multi-arch (amd64 + arm64) (obligatoire)
+
+Exemple de build multi-arch avec Buildx (à adapter à votre registry) :
+
+```bash
+docker buildx build --platform linux/amd64,linux/arm64 -t mon-registry/mon-image:1.0.0 ./backend
+docker buildx build --platform linux/amd64,linux/arm64 -t mon-registry/mon-image:1.0.0 ./frontend
+```
+
+## Troubleshooting (obligatoire)
+
+- **Erreur secret manquant** (`secrets/db_password.txt` absent) :
+  - Vérifiez que `secrets/db_password.txt` existe (copie depuis `secrets/db_password.txt.example`).
+- **Port 80 déjà utilisé** :
+  - Changez le mapping du frontend dans `compose.prod.yaml` (ex : `8080:8080`) ou libérez le port.
+- **Healthcheck KO / dépendances** :
+  - Inspectez : `docker compose -f compose.yaml ps` puis `docker compose -f compose.yaml logs -f backend db frontend`
+- **Docker Desktop non démarré** :
+  - Lancez Docker Desktop puis relancez `docker compose ...`.
+- **Erreur YAML liée à `!override` / `!reset`** :
+  - Mettez à jour Docker Compose (plugin) vers une version récente, ou basculez sur une approche `profiles` (si imposé par l’environnement).
 

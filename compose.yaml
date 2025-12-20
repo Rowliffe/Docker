@@ -1,0 +1,81 @@
+name: exam-docker-v6
+
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-evaluation}
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    secrets:
+      - db_password
+    networks:
+      - back_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  backend:
+    build:
+      context: ./backend
+      target: dev
+    environment:
+      PORT: ${BACKEND_PORT:-3001}
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB:-evaluation}
+      DB_USER: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD_FILE: /run/secrets/db_password
+    secrets:
+      - db_password
+    ports:
+      - "${BACKEND_PORT:-3001}:3001"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - front_net
+      - back_net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3001/health > /dev/null || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  frontend:
+    build:
+      context: ./frontend
+      target: dev
+    environment:
+      VITE_API_BASE_URL: http://localhost:${BACKEND_PORT:-3001}
+    ports:
+      - "${FRONTEND_PORT:-5173}:5173"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - front_net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:5173/ > /dev/null || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  db-data:
+
+networks:
+  front_net:
+  back_net:
+    internal: true
+
+secrets:
+  db_password:
+    file: ./secrets/db_password.txt
+
+

@@ -20,6 +20,10 @@ const pool = new Pool({
 app.use(cors());
 app.use(express.json());
 
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
 app.get('/api/instruction', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM instructions ORDER BY id ASC LIMIT 1');
