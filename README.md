@@ -109,11 +109,14 @@ docker buildx build --platform linux/amd64,linux/arm64 --target prod --build-arg
 **Tags** :
 - `latest` : version stable (main)
 - `v1.0.0`, `v1.1.0` : versions sémantiques
-- `sha-<commit>` : tag immuable (traçabilité)
+- `sha-<commit>` : tag immuable (permet la traçabilité)
 
-**Authentification** :
+**Docker Hub** :
 ```bash
-echo $GITHUB_TOKEN | docker login ghcr.io -u USERNAME --password-stdin
+docker pull rowliffe/exam-docker-v6-backend
+```
+```bash
+docker pull rowliffe/exam-docker-v6-frontend
 ```
 
 **Push backend** :
@@ -248,7 +251,6 @@ Exam_docker_V6/
 
 ## Références
 
-- **Guide** : projet-final.pdf (Module Docker/Conteneurisation, Jérémy Marodon, 2025)
 - **Compose** : https://docs.docker.com/compose/
 - **Buildx** : https://docs.docker.com/buildx/working-with-buildx/
 - **GHCR** : https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry
