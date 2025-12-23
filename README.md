@@ -141,12 +141,6 @@ docker buildx build \
   ./frontend
 ```
 
-**Vérifier manifest** :
-```bash
-docker buildx imagetools inspect ghcr.io/rowliffe/exam-docker-v6-backend:v1.0.0
-# Doit afficher : Platform: linux/amd64, Platform: linux/arm64
-```
-
 ## Optimisations
 
 **Dockerfiles** :
