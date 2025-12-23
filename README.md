@@ -27,11 +27,14 @@ Docker Compose v2.0+ (`docker compose version`)
 
 ```bash
 git clone https://github.com/Rowliffe/Docker.git
-cd Docker/Exam_docker_V6
+cd Docker
+```
 
-# Créer secret DB (non commité)
+```bash
+# Créer un fichier secret appelé db_passwors.txt (non commité)
 cp secrets/db_password.txt.example secrets/db_password.txt
-
+```
+```bash
 # Créer .env (non commité)
 cp .env.example .env
 ```
@@ -41,6 +44,7 @@ cp .env.example .env
 ## Mode développement
 
 ```bash
+#Ne pas oublier de lancer DOcker Desktop avant
 docker compose -f compose.yaml up --build
 ```
 

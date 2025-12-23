@@ -17,6 +17,9 @@ ENV NODE_ENV=development
 COPY --from=deps-dev /app/node_modules ./node_modules
 COPY . .
 
+# Ensure bash is installed and fix CRLF if present
+RUN apk add --no-cache bash && sed -i 's/\r$//' /app/docker-entrypoint.sh
+
 # Non-root
 RUN chown -R node:node /app
 USER node
@@ -24,7 +27,7 @@ USER node
 EXPOSE 3001
 HEALTHCHECK --interval=5s --timeout=3s --retries=20 CMD wget -qO- http://localhost:3001/health > /dev/null || exit 1
 
-ENTRYPOINT ["/bin/sh", "/app/docker-entrypoint.sh"]
+ENTRYPOINT ["/bin/bash", "/app/docker-entrypoint.sh"]
 CMD ["npm", "run", "dev"]
 
 FROM node:18-alpine AS prod
@@ -34,6 +37,9 @@ ENV NODE_ENV=production
 COPY --from=deps-prod /app/node_modules ./node_modules
 COPY . .
 
+# Ensure bash is installed and fix CRLF if present
+RUN apk add --no-cache bash && sed -i 's/\r$//' /app/docker-entrypoint.sh
+
 # Non-root
 RUN chown -R node:node /app
 USER node
@@ -41,5 +47,5 @@ USER node
 EXPOSE 3001
 HEALTHCHECK --interval=5s --timeout=3s --retries=20 CMD wget -qO- http://localhost:3001/health > /dev/null || exit 1
 
-ENTRYPOINT ["/bin/sh", "/app/docker-entrypoint.sh"]
+ENTRYPOINT ["/bin/bash", "/app/docker-entrypoint.sh"]
 CMD ["npm", "start"]

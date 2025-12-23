@@ -1,5 +1,5 @@
-#!/bin/sh
-set -eu
+#!/usr/bin/env bash
+set -euo pipefail
 
 # Construit DATABASE_URL à partir des variables + secret file, si pas déjà fourni.
 if [ -z "${DATABASE_URL:-}" ]; then
