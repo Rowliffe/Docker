@@ -43,6 +43,8 @@ cp .env.example .env
 
 ## Mode développement
 
+- Ne pas oublier de mettre le bon mdp de votre BDD pour que cela puisse marcher 
+
 ```bash
 #Ne pas oublier de lancer DOcker Desktop avant
 docker compose -f compose.yaml up --build
@@ -59,6 +61,8 @@ curl http://localhost:3001/api/instruction # Données DB
 **Arrêter** : `docker compose -f compose.yaml down`
 
 ## Mode production locale
+
+- Ne pas oublier de mettre le bon mdp de votre BDD pour que cela puisse marcher 
 
 ```bash
 docker compose -f compose.yaml -f compose.prod.yaml up --build
